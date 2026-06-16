@@ -402,9 +402,14 @@
     function cloneSectionDefaults() {
       return sectionDefaults.map(def => ({ ...def }));
     }
+    function clonePageState(pageState) {
+      return pageState.map(section => ({ ...section }));
+    }
     function ensurePageState(pageIdx) {
       if (!window.pageStates[pageIdx]) {
-        window.pageStates[pageIdx] = cloneSectionDefaults();
+        window.pageStates[pageIdx] = window.pageStates[0]
+          ? clonePageState(window.pageStates[0])
+          : cloneSectionDefaults();
       }
     }
     function getSectionState(pageIdx, idx) {
@@ -556,6 +561,27 @@
     function saveSectionState(pageIdx, idx, state) {
       ensurePageState(pageIdx);
       window.pageStates[pageIdx][idx] = state;
+      if (pageIdx === 0) {
+        for (let i = 1; i < currentPageCount; i++) {
+          ensurePageState(i);
+          window.pageStates[i][idx] = { ...state };
+          syncSectionForm(i, idx, state);
+          renderSumsTable(i, idx);
+        }
+      }
+    }
+    function syncSectionForm(pageIdx, idx, state) {
+      const section = document.getElementById(`rij-section-${pageIdx}-${idx}`);
+      if (!section) return;
+      const textInputs = section.querySelectorAll('.rij-form input[type="text"]');
+      const opSelect = section.querySelector('.rij-form select');
+      const checkboxes = section.querySelectorAll('.rij-form input[type="checkbox"]');
+      if (textInputs[0]) textInputs[0].value = state.n1;
+      if (textInputs[1]) textInputs[1].value = state.n2;
+      if (textInputs[2]) textInputs[2].value = state.answer;
+      if (opSelect) opSelect.value = state.op;
+      if (checkboxes[0]) checkboxes[0].checked = !!state.voorkomTiental;
+      if (checkboxes[1]) checkboxes[1].checked = !!state.voorkomRest;
     }
     // Render sums table for a section
     function renderSumsTable(pageIdx, idx) {
